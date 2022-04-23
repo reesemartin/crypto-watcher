@@ -8,7 +8,16 @@ Currently only monitoring STG on the AVAX network
 ## Available Telegram Bot Commands
 
 ### `/price`
-Provides the latest price
+Provides the latest price.
+
+### `/alert show`
+Shows the list of price alerts.
+
+### `/alert clear`
+Clears the list of price alerts.
+
+### `/alert TOKEN PRICE CHAIN`
+Adds a new price alert. CHAIN is optional and defaults to AVAX
 
 ## Install
 ```
