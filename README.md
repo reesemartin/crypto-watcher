@@ -14,6 +14,7 @@ Provides the latest price
 ```
 touch .env
 mkdir logs
+touch logs\prices.json
 touch logs\telegram-cache.json
 npm install
 ```
