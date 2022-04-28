@@ -1,7 +1,8 @@
 import 'dotenv/config'
 import fetch from "node-fetch"
-import { getPrice } from './priceProcessor.js'
-import { getLog, setLog, saveLog } from './logger.js'
+import { getPrice } from './../lib/priceProcessor.js'
+import { getLog, setLog, saveLog } from './../lib/logger.js'
+import { toDecimalPlaces, toDecimalPlacesString } from './../lib/utils.js'
 
 const sendMessage = (chatID) => async (message) => {
   console.log('sending:', message, 'to', chatID)
@@ -34,7 +35,7 @@ const showAlerts = async (chatID) => {
   let message = alerts.length ? 'Current Alerts:\n' : 'No alerts currently set.\nTo add an alert enter:\n/alert TOKEN PRICE CHAIN'
   for (let i = 0; i < alerts.length; i++) {
     const alert = alerts[i];
-    message += `\t${alert.token} at $${alert.price.toFixed(2)} on ${alert.chain}` + '\n'
+    message += `\t${alert.token} at $${toDecimalPlacesString(alert.price, 2)} on ${alert.chain}` + '\n'
   }
 
   sendMessage(chatID)(message)
@@ -65,13 +66,13 @@ const addAlert = async (chatID, messageText) => {
         chatID,
         token: token.toUpperCase(),
         chain: chain.toUpperCase(),
-        price: Number(price),
+        price: toDecimalPlaces(price, 2),
       }
       let alerts = getLog('alerts')
       alerts.push({...alert})
       setLog('alerts', alerts)
       await saveLog('alerts')
-      sendMessage(chatID)(`Alert added for ${alert.token} at $${alert.price.toFixed(2)} on ${alert.chain}`)
+      sendMessage(chatID)(`Alert added for ${alert.token} at $${toDecimalPlacesString(alert.price, 2)} on ${alert.chain}`)
     }
   }
 }
@@ -82,20 +83,24 @@ const processMessages = async (messages) => {
     const message = messages[i];
     newTelegramCache.push(message.update_id)
     try {
-      if ( message.channel_post?.text === '/price' ) {
+      if ( message.channel_post?.text?.startsWith('/price') ) {
         try {
-          let price = getPrice()
-          await sendMessage(message.channel_post.chat.id)(`Requested Price: ${price.token} ${price.price} on ${price.chain}`)
+          let messageParts = message.channel_post.text.split(' ')
+          let token = messageParts[1] ? messageParts[1] : 'AVAX'
+          let chain = messageParts[2] ? messageParts[2] : 'AVAX'
+
+          let price = getPrice(token, chain)
+          await sendMessage(message.channel_post.chat.id)(`Requested Price: ${price.token} ${toDecimalPlacesString(price.price, 2)} on ${price.chain}`)
         }
         catch(err) {
           console.error(err)
           throw 'Sorry there was an error retrieving the price.' // just send generic error to chat
         }
       }
-      else if ( message.channel_post?.text === '/alert show' ) {
+      else if ( message.channel_post?.text === '/alert show' || message.channel_post?.text === '/alerts show' ) {
         await showAlerts(message.channel_post.chat.id)
       }
-      else if ( message.channel_post?.text === '/alert clear' ) {
+      else if ( message.channel_post?.text === '/alert clear' || message.channel_post?.text === '/alerts clear' ) {
         await clearAlerts(message.channel_post.chat.id)
       }
       else if ( message.channel_post?.text?.startsWith('/alert') ) {

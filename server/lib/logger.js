@@ -26,13 +26,13 @@ export const getLog = (log) => {
   switch (log) {
     case 'prices':
       return PRICES
-      
+
     case 'telegram-cache':
       return TELEGRAMCACHE
-      
+
     case 'alerts':
       return ALERTS
-  
+
     default:
       return null
   }
@@ -42,13 +42,13 @@ export const setLog = (log, data) => {
   switch (log) {
     case 'prices':
       return PRICES = [...data]
-      
+
     case 'telegram-cache':
       return TELEGRAMCACHE = [...data]
-      
+
     case 'alerts':
       return ALERTS = [...data]
-  
+
     default:
       return null
   }
@@ -61,14 +61,17 @@ export const saveLog = async (log) => {
     case 'prices':
       file = 'prices.json'
       data = PRICES
-      
+    break
+
     case 'telegram-cache':
       file = 'telegram-cache.json'
       data = TELEGRAMCACHE
-      
+    break
+
     case 'alerts':
       file = 'alerts.json'
       data = ALERTS
+    break
   }
 
   if (file === '') {

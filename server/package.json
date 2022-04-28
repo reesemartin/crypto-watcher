@@ -1,5 +1,5 @@
 {
-  "name": "crypto-watcher",
+  "name": "crypto-watcher-server",
   "version": "1.0.0",
   "description": "Helper scripts for watching crypto markets",
   "main": "index.js",

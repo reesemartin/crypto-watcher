@@ -1,35 +1,42 @@
 import { ethers } from "ethers"
-import { getLog, setLog, saveLog } from './logger.js'
+import { getLog, setLog, saveLog } from './../lib/logger.js'
+import { chains } from './../chains.js'
 
-const AMOUNT_OF_STG = 1
+const AMOUNT_OF_TOKEN = 1
 
 const savePriceRecord = async (price) => {
   console.log(price)
 
   let prices = getLog('prices')
   prices.push({...price})
-  if (prices.length > 100000) {
-    prices.shift() // only store up to 10000 price records
+  if (prices.length > 1000000) { // only store up to 1,000,000 price records
+    prices.shift()
   }
   setLog('prices', prices)
   await saveLog('prices')
 }
 
-const chains = [
-  {
-    name: 'AVAX',
-    pair: '0x330f77bda60d8dab14d2bb4f6248251443722009',
-    router: '0x60aE616a2155Ee3d9A68541Ba4544862310933d4',
-    tokenSymbol: 'STG',
-    token0: '0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590',
-    token1: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-    provider: new ethers.providers.JsonRpcProvider('https://api.avax.network/ext/bc/C/rpc'),
-    token0ReserveTransform: x => ethers.utils.formatUnits(x, 18),
-    token1ReserveTransform: x => ethers.utils.formatUnits(x, 6),
-    amountInTransform: x => String(x) + '000000000000000000',
-    amountOutTransform: x => x / 10 ** 6,
-  },
-]
+function generateChains (rawChains) {
+  let chains = []
+  for (let i = 0; i < rawChains.length; i++) {
+    const chain = rawChains[i];
+    chains.push({
+      name: chain.name,
+      pair: chain.pair,
+      router: chain.router,
+      tokenSymbol: chain.tokenSymbol,
+      token0: chain.token0,
+      token1: chain.token1,
+      provider: new ethers.providers.JsonRpcProvider(chain.JsonRpc),
+      token0ReserveTransform: x => ethers.utils.formatUnits(x, chain.token0Precision),
+      token1ReserveTransform: x => ethers.utils.formatUnits(x, chain.token1Precision),
+      amountInTransform: x => String(x) + '0'.repeat(chain.token1Precision),
+      amountOutTransform: x => x / 10 ** chain.token1Precision,
+    })
+  }
+
+  return [...chains]
+}
 
 function generateContracts (chain) {
   const pairContract = new ethers.Contract(
@@ -70,7 +77,7 @@ async function watchPair (chain, contracts) {
 
     const price = Number(reserveB) / Number(reserveA)
 
-    const amountIn = chain.amountInTransform(AMOUNT_OF_STG)
+    const amountIn = chain.amountInTransform(AMOUNT_OF_TOKEN)
     const amounts = await routerContract.getAmountsOut(amountIn, [chain.token0, chain.token1])
     const amountOut = chain.amountOutTransform(Number(amounts[1].toString()))
 
@@ -94,7 +101,9 @@ async function watchPair (chain, contracts) {
 export const gatherer = async () => {
   console.log('start gathering')
 
-  chains.forEach(chain => {
+  const formattedChains = generateChains(chains)
+
+  formattedChains.forEach(chain => {
     const contracts = generateContracts(chain)
     watchPair(chain, contracts)
   })
