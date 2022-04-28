@@ -133,7 +133,7 @@ const getMessagesInterval = () => {
   setTimeout(async () => {
     await getNewMessages()
     getMessagesInterval()
-  }, 5 * 1000)
+  }, 2 * 1000)
 }
 
 export const responder = async () => {
